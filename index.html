@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>хуесос · v2.4</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;
+  background:linear-gradient(135deg,#dce8ff 0%,#ead8ff 40%,#ffd8ea 70%,#d8ffe8 100%);
+  min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
+}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
+
+.win{
+  width:350px;max-height:450px;display:flex;flex-direction:column;
+  background:rgba(255,255,255,.75);
+  backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%);
+  border-radius:16px;border:1px solid rgba(255,255,255,.9);
+  box-shadow:0 12px 48px rgba(0,0,0,.13),0 2px 8px rgba(0,0,0,.07);
+  overflow:visible;
+}
+
+/* TITLEBAR */
+.titlebar{
+  display:flex;align-items:center;padding:11px 14px;
+  background:rgba(255,255,255,.55);border-bottom:1px solid rgba(0,0,0,.065);
+  gap:8px;flex-shrink:0;border-radius:16px 16px 0 0;
+}
+.tls{display:flex;gap:5px;}
+.tl{width:11px;height:11px;border-radius:50%;cursor:pointer;transition:filter .15s;}
+.tl:hover{filter:brightness(.8);}
+.tl.c{background:#FF3B30}.tl.m{background:#FFD60A}.tl.x{background:#30D158}
+.title-txt{flex:1;text-align:center;font-size:12.5px;font-weight:600;color:#1C1C1E;margin-left:-37px;letter-spacing:.2px;}
+.status{width:6px;height:6px;border-radius:50%;background:#30D158;box-shadow:0 0 6px rgba(48,209,88,.7);animation:pulse 2s ease-in-out infinite;}
+
+/* TABS */
+.tabs{display:flex;padding:7px 10px 0;gap:2px;background:rgba(255,255,255,.32);border-bottom:1px solid rgba(0,0,0,.065);flex-shrink:0;}
+.tab{flex:1;padding:6px 0;text-align:center;font-size:11.5px;font-weight:500;color:#6C6C70;cursor:pointer;border-radius:7px 7px 0 0;border-bottom:2px solid transparent;transition:all .15s;user-select:none;}
+.tab:hover{background:rgba(0,0,0,.04);color:#1C1C1E;}
+.tab.active{color:#0A84FF;border-bottom-color:#0A84FF;background:rgba(10,132,255,.07);}
+
+/* CONTENT */
+.content{overflow-y:auto;flex:1;padding:2px 0 8px;}
+.section{display:none;animation:fadeIn .15s ease;}
+.section.active{display:block;}
+
+/* ENABLE ROW */
+.enable-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 14px;background:rgba(10,132,255,.06);border-bottom:1px solid rgba(0,0,0,.065);
+}
+.enable-label{font-size:13px;font-weight:600;color:#6C6C70;transition:color .2s;}
+.enable-label.on{color:#0A84FF;}
+
+/* TOGGLE */
+.tog{width:34px;height:19px;border-radius:10px;background:#D1D1D6;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0;}
+.tog.on{background:#30D158;}
+.tog::after{content:'';position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:white;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s cubic-bezier(.34,1.56,.64,1);}
+.tog.on::after{transform:translateX(15px);}
+
+/* SECTION LABEL */
+.slabel{font-size:10px;font-weight:600;color:#AEAEB2;text-transform:uppercase;letter-spacing:.6px;padding:8px 14px 3px;}
+
+/* ROW */
+.row{display:flex;align-items:center;padding:5px 14px;gap:9px;cursor:pointer;border-radius:8px;margin:0 4px;transition:background .1s;}
+.row:hover{background:rgba(0,0,0,.04);}
+.row-icon{width:27px;height:27px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+.row-info{flex:1;}
+.row-name{font-size:12.5px;font-weight:500;color:#1C1C1E;}
+.row-desc{font-size:10.5px;color:#AEAEB2;margin-top:1px;}
+
+/* DIVIDER */
+.div{height:1px;background:rgba(0,0,0,.065);margin:3px 14px;}
+
+/* SLIDER */
+.slider-wrap{padding:5px 14px 8px;}
+.slider-header{display:flex;justify-content:space-between;margin-bottom:6px;}
+.slider-name{font-size:12.5px;font-weight:500;color:#1C1C1E;}
+.slider-val{font-size:11.5px;font-weight:600;color:#0A84FF;background:rgba(10,132,255,.11);padding:1px 7px;border-radius:5px;}
+.slider-track{width:100%;height:4px;background:rgba(0,0,0,.08);border-radius:2px;position:relative;cursor:pointer;}
+.slider-fill{height:100%;border-radius:2px;background:#0A84FF;position:relative;pointer-events:none;}
+.slider-thumb{position:absolute;right:-6px;top:-5px;width:13px;height:13px;border-radius:50%;background:white;border:2px solid #0A84FF;box-shadow:0 1px 4px rgba(10,132,255,.4);}
+
+/* COLOR PICKER */
+.cp-wrap{padding:4px 12px 8px;}
+.cp-sv{width:100%;height:110px;border-radius:9px;position:relative;cursor:crosshair;margin-bottom:7px;overflow:hidden;}
+.cp-sv-white{position:absolute;inset:0;background:linear-gradient(to right,#fff,transparent);}
+.cp-sv-black{position:absolute;inset:0;background:linear-gradient(to top,#000,transparent);}
+.cp-cursor{position:absolute;width:12px;height:12px;border-radius:50%;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.5);pointer-events:none;transform:translate(-50%,-50%);}
+.cp-hue{width:100%;height:11px;border-radius:6px;cursor:pointer;position:relative;margin-bottom:8px;background:linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00);}
+.cp-hue-thumb{position:absolute;width:15px;height:15px;border-radius:50%;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.3);pointer-events:none;top:-2px;transform:translateX(-50%);}
+.cp-preview-row{display:flex;align-items:center;gap:7px;margin-bottom:8px;}
+.cp-swatch{width:30px;height:30px;border-radius:8px;border:1px solid rgba(0,0,0,.1);flex-shrink:0;}
+.cp-hex{flex:1;background:rgba(0,0,0,.04);border-radius:7px;padding:6px 9px;font-size:12px;font-weight:500;color:#1C1C1E;font-family:monospace;letter-spacing:.8px;}
+.cp-presets{display:flex;gap:4px;}
+.cp-preset{flex:1;height:18px;border-radius:5px;cursor:pointer;border:2px solid transparent;transition:transform .12s,border-color .12s;}
+.cp-preset:hover{transform:scaleY(1.2);}
+.cp-preset.active{border-color:rgba(0,0,0,.35);}
+
+/* COMBO DROPDOWN */
+.combo-wrap{margin:3px 12px 6px;position:relative;z-index:10;}
+.combo-trigger{display:flex;align-items:center;padding:8px 11px;border-radius:9px;background:rgba(248,248,248,.9);border:1px solid rgba(0,0,0,.09);cursor:pointer;gap:7px;transition:border-color .15s;}
+.combo-trigger.open{border-color:#0A84FF;}
+.combo-label{font-size:12px;font-weight:500;color:#AEAEB2;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.combo-label.has-sel{color:#1C1C1E;}
+.combo-count{font-size:10.5px;font-weight:600;color:#0A84FF;background:rgba(10,132,255,.11);padding:1px 6px;border-radius:5px;flex-shrink:0;}
+.combo-arrow{font-size:8px;color:#AEAEB2;flex-shrink:0;transition:transform .2s;}
+.combo-arrow.open{transform:rotate(180deg);}
+.combo-dropdown{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:rgba(252,252,252,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:11px;border:1px solid rgba(0,0,0,.09);box-shadow:0 8px 28px rgba(0,0,0,.13);overflow:hidden;animation:fadeIn .12s ease;}
+.combo-dropdown.open{display:block;}
+.combo-item{display:flex;align-items:center;padding:8px 11px;gap:9px;cursor:pointer;border-bottom:1px solid rgba(0,0,0,.05);transition:background .1s;}
+.combo-item:last-child{border-bottom:none;}
+.combo-item:hover{background:rgba(0,0,0,.04);}
+.combo-item.sel{background:rgba(10,132,255,.07);}
+.combo-item.sel:hover{background:rgba(10,132,255,.1);}
+.combo-cb{width:16px;height:16px;border-radius:5px;flex-shrink:0;border:1.5px solid #C7C7CC;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.combo-item.sel .combo-cb{background:#0A84FF;border-color:#0A84FF;}
+.combo-check{color:white;font-size:10px;font-weight:700;display:none;}
+.combo-item.sel .combo-check{display:block;}
+.combo-item-name{font-size:12.5px;font-weight:500;color:#1C1C1E;}
+.combo-item.sel .combo-item-name{color:#0A84FF;}
+
+/* CFG */
+.cfg-list{padding:0 6px;}
+.cfg-item{display:flex;align-items:center;padding:7px 9px;border-radius:9px;gap:8px;cursor:pointer;transition:background .12s;}
+.cfg-item:hover{background:rgba(0,0,0,.04);}
+.cfg-item.active{background:rgba(10,132,255,.11);}
+.cfg-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;background:#D1D1D6;transition:all .2s;}
+.cfg-item.active .cfg-dot{background:#0A84FF;box-shadow:0 0 5px rgba(10,132,255,.4);}
+.cfg-name{flex:1;font-size:12.5px;font-weight:500;color:#1C1C1E;}
+.cfg-date{font-size:10.5px;color:#AEAEB2;}
+.cfg-btns{display:flex;gap:3px;}
+.cfg-btn{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;cursor:pointer;transition:background .12s;}
+.cfg-btn.load{background:rgba(10,132,255,.1);color:#0A84FF;}
+.cfg-btn.load:hover{background:rgba(10,132,255,.22);}
+.cfg-btn.del{background:rgba(255,59,48,.1);color:#FF3B30;}
+.cfg-btn.del:hover{background:rgba(255,59,48,.22);}
+.cfg-new{display:flex;align-items:center;gap:7px;margin:7px 11px 0;padding:7px 11px;background:rgba(248,248,248,.85);border:1px dashed rgba(0,0,0,.12);border-radius:9px;cursor:pointer;transition:all .15s;}
+.cfg-new:hover{border-color:rgba(10,132,255,.35);background:rgba(10,132,255,.07);}
+.cfg-new-plus{font-size:17px;color:#0A84FF;line-height:1;}
+.cfg-new-txt{font-size:12px;font-weight:500;color:#6C6C70;}
+.cfg-input-row{margin:7px 11px 0;display:none;gap:5px;}
+.cfg-input-row.show{display:flex;}
+.cfg-input{flex:1;border:1px solid rgba(0,0,0,.1);background:rgba(255,255,255,.7);border-radius:7px;padding:6px 9px;font-size:12px;font-family:inherit;outline:none;color:#1C1C1E;}
+.cfg-input:focus{border-color:#0A84FF;}
+.cfg-save-btn{padding:6px 13px;border-radius:7px;background:#0A84FF;color:white;font-size:11.5px;font-weight:600;cursor:pointer;border:none;font-family:inherit;}
+.cfg-footer{padding:10px 11px 2px;display:flex;justify-content:flex-end;}
+.save-cfg-btn{font-size:12px;font-weight:600;color:#0A84FF;background:rgba(10,132,255,.11);padding:6px 16px;border-radius:8px;cursor:pointer;transition:background .15s;}
+.save-cfg-btn:hover{background:rgba(10,132,255,.2);}
+</style>
+</head>
+<body>
+
+<div class="win">
+  <div class="titlebar">
+    <div class="tls">
+      <div class="tl c"></div>
+      <div class="tl m"></div>
+      <div class="tl x"></div>
+    </div>
+    <div class="title-txt">хуесос · v2.4</div>
+    <div class="status"></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('esp')">ESP</div>
+    <div class="tab" onclick="switchTab('aim')">Aimbot</div>
+    <div class="tab" onclick="switchTab('cfg')">Config</div>
+  </div>
+
+  <div class="content">
+
+    <!-- ESP -->
+    <div id="sec-esp" class="section active">
+      <div class="enable-row">
+        <span class="enable-label on" id="esp-lbl">Enable ESP</span>
+        <div class="tog on" id="tog-esp-enable" onclick="togEnable('esp')"></div>
+      </div>
+      <div class="slabel">Bounding Box</div>
+      <div class="row" onclick="togRow(this)">
+        <div class="row-icon" style="background:rgba(10,132,255,.11)">📦</div>
+        <div class="row-info"><div class="row-name">Box ESP</div><div class="row-desc">2D outline · adaptive</div></div>
+        <div class="tog on" onclick="event.stopPropagation();this.classList.toggle('on')"></div>
+      </div>
+      <div class="slabel">Skeleton</div>
+      <div class="row" onclick="togRow(this)">
+        <div class="row-icon" style="background:rgba(90,200,250,.11)">🦴</div>
+        <div class="row-info"><div class="row-name">Skeleton</div><div class="row-desc">Full rig · 17 joints</div></div>
+        <div class="tog on" onclick="event.stopPropagation();this.classList.toggle('on')"></div>
+      </div>
+      <div class="slabel">Health Bar</div>
+      <div class="row" onclick="togRow(this)">
+        <div class="row-icon" style="background:rgba(48,209,88,.11)">🏥</div>
+        <div class="row-info"><div class="row-name">HP Bar</div><div class="row-desc">Side · color by health</div></div>
+        <div class="tog on" onclick="event.stopPropagation();this.classList.toggle('on')"></div>
+      </div>
+      <div class="slabel">Lines</div>
+      <div class="row" onclick="togRow(this)">
+        <div class="row-icon" style="background:rgba(10,132,255,.11)">📍</div>
+        <div class="row-info"><div class="row-name">Snap lines</div><div class="row-desc">Screen bottom → feet</div></div>
+        <div class="tog on" onclick="event.stopPropagation();this.classList.toggle('on')"></div>
+      </div>
+      <div class="slabel">ESP Color</div>
+      <div class="cp-wrap">
+        <div class="cp-sv" id="cp-sv">
+          <div class="cp-sv-white"></div>
+          <div class="cp-sv-black"></div>
+          <div class="cp-cursor" id="cp-cursor"></div>
+        </div>
+        <div class="cp-hue" id="cp-hue">
+          <div class="cp-hue-thumb" id="cp-hue-thumb"></div>
+        </div>
+        <div class="cp-preview-row">
+          <div class="cp-swatch" id="cp-swatch"></div>
+          <div class="cp-hex" id="cp-hex">#0A84FF</div>
+        </div>
+        <div class="cp-presets" id="cp-presets"></div>
+      </div>
+    </div>
+
+    <!-- AIMBOT -->
+    <div id="sec-aim" class="section">
+      <div class="enable-row">
+        <span class="enable-label on" id="aim-lbl">Enable Aimbot</span>
+        <div class="tog on" id="tog-aim-enable" onclick="togEnable('aim')"></div>
+      </div>
+      <div class="slabel">Checks</div>
+      <div class="row" onclick="togRow(this)">
+        <div class="row-icon" style="background:rgba(48,209,88,.11)">👁</div>
+        <div class="row-info"><div class="row-name">Visible only</div><div class="row-desc">Skip behind-wall targets</div></div>
+        <div class="tog on" onclick="event.stopPropagation();this.classList.toggle('on')"></div>
+      </div>
+      <div class="row" onclick="togRow(this)">
+        <div class="row-icon" style="background:rgba(10,132,255,.11)">⭕</div>
+        <div class="row-info"><div class="row-name">FOV Check</div><div class="row-desc">Aim within circle only</div></div>
+        <div class="tog on" onclick="event.stopPropagation();this.classList.toggle('on')"></div>
+      </div>
+      <div class="row" onclick="togRow(this)">
+        <div class="row-icon" style="background:rgba(90,200,250,.11)">🔵</div>
+        <div class="row-info"><div class="row-name">Draw FOV</div><div class="row-desc">Show circle on screen</div></div>
+        <div class="tog on" onclick="event.stopPropagation();this.classList.toggle('on')"></div>
+      </div>
+      <div class="slider-wrap">
+        <div class="slider-header">
+          <span class="slider-name">FOV Radius</span>
+          <span class="slider-val" id="fov-val">85</span>
+        </div>
+        <div class="slider-track" id="fov-track">
+          <div class="slider-fill" id="fov-fill" style="width:42%"><div class="slider-thumb"></div></div>
+        </div>
+      </div>
+      <div class="slider-wrap">
+        <div class="slider-header">
+          <span class="slider-name">Smooth</span>
+          <span class="slider-val" id="sm-val">4.2</span>
+        </div>
+        <div class="slider-track" id="sm-track">
+          <div class="slider-fill" id="sm-fill" style="width:42%"><div class="slider-thumb"></div></div>
+        </div>
+      </div>
+      <div class="div"></div>
+      <div class="slabel">Combo</div>
+      <div class="combo-wrap" id="combo-wrap">
+        <div class="combo-trigger" id="combo-trigger" onclick="toggleCombo()">
+          <span class="combo-label" id="combo-label">Head, Chest</span>
+          <span class="combo-count" id="combo-count">2</span>
+          <span class="combo-arrow" id="combo-arrow">▼</span>
+        </div>
+        <div class="combo-dropdown" id="combo-dropdown"></div>
+      </div>
+    </div>
+
+    <!-- CONFIG -->
+    <div id="sec-cfg" class="section">
+      <div class="slabel">Profiles</div>
+      <div class="cfg-list" id="cfg-list"></div>
+      <div class="cfg-new" onclick="showNewInput()">
+        <div class="cfg-new-plus">＋</div>
+        <div class="cfg-new-txt">New config...</div>
+      </div>
+      <div class="cfg-input-row" id="cfg-input-row">
+        <input class="cfg-input" id="cfg-input" placeholder="config name" onkeydown="if(event.key==='Enter')addCfg()"/>
+        <button class="cfg-save-btn" onclick="addCfg()">Save</button>
+      </div>
+      <div class="cfg-footer">
+        <div class="save-cfg-btn" onclick="saveCurrent()">Save config</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// TAB SWITCH
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    t.classList.toggle('active',['esp','aim','cfg'][i]===name);
+  });
+  document.querySelectorAll('.section').forEach(s=>{
+    s.classList.toggle('active',s.id==='sec-'+name);
+  });
+}
+
+// TOGGLE ROW
+function togRow(row) {
+  const t=row.querySelector('.tog');
+  if(t) t.classList.toggle('on');
+}
+
+// ENABLE TOGGLES
+function togEnable(type) {
+  const tog=document.getElementById('tog-'+type+'-enable');
+  const lbl=document.getElementById(type+'-lbl');
+  tog.classList.toggle('on');
+  lbl.classList.toggle('on', tog.classList.contains('on'));
+}
+
+// SLIDERS
+function makeSlider(trackId, fillId, valId, min, max, fmt) {
+  const track=document.getElementById(trackId);
+  const fill=document.getElementById(fillId);
+  const val=document.getElementById(valId);
+  let drag=false;
+  function update(x) {
+    const r=track.getBoundingClientRect();
+    const p=Math.max(0,Math.min(1,(x-r.left)/r.width));
+    fill.style.width=(p*100)+'%';
+    val.textContent=fmt(min+(max-min)*p);
+  }
+  track.addEventListener('mousedown',e=>{drag=true;update(e.clientX);e.preventDefault();});
+  document.addEventListener('mousemove',e=>{if(drag)update(e.clientX);});
+  document.addEventListener('mouseup',()=>drag=false);
+}
+makeSlider('fov-track','fov-fill','fov-val',10,180,v=>Math.round(v));
+makeSlider('sm-track','sm-fill','sm-val',0,10,v=>v.toFixed(1));
+
+// COLOR PICKER
+const PRESETS=['#0A84FF','#30D158','#FF3B30','#FF9F0A','#BF5AF2','#5AC8FA','#FFD60A','#FF2D55'];
+let cpH=211, cpS=100, cpV=100;
+
+function hsvToHex(h,s,v){
+  const s2=s/100,v2=v/100;
+  const f=n=>{const k=(n+h/60)%6;return v2-v2*s2*Math.max(0,Math.min(k,4-k,1));};
+  const toH=x=>Math.round(x*255).toString(16).padStart(2,'0');
+  return '#'+toH(f(5))+toH(f(3))+toH(f(1));
+}
+function hexToHsv(hex){
+  const r=parseInt(hex.slice(1,3),16)/255,g=parseInt(hex.slice(3,5),16)/255,b=parseInt(hex.slice(5,7),16)/255;
+  const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;
+  let h=0;
+  if(d){if(mx===r)h=((g-b)/d)%6;else if(mx===g)h=(b-r)/d+2;else h=(r-g)/d+4;h=Math.round(h*60);if(h<0)h+=360;}
+  return [h,mx?Math.round((d/mx)*100):0,Math.round(mx*100)];
+}
+function updateCP(){
+  const hex=hsvToHex(cpH,cpS,cpV);
+  const sv=document.getElementById('cp-sv');
+  sv.style.background=`hsl(${cpH},100%,50%)`;
+  const cur=document.getElementById('cp-cursor');
+  cur.style.left=cpS+'%';
+  cur.style.top=(100-cpV)+'%';
+  cur.style.background=hex;
+  document.getElementById('cp-hue-thumb').style.left=(cpH/360*100)+'%';
+  document.getElementById('cp-hue-thumb').style.background=`hsl(${cpH},100%,50%)`;
+  document.getElementById('cp-swatch').style.background=hex;
+  document.getElementById('cp-hex').textContent=hex.toUpperCase();
+  document.querySelectorAll('.cp-preset').forEach(p=>{
+    p.classList.toggle('active',p.dataset.color.toLowerCase()===hex.toLowerCase());
+  });
+}
+// SV drag
+const svEl=document.getElementById('cp-sv');
+let svDrag=false;
+svEl.addEventListener('mousedown',e=>{svDrag=true;dragSV(e);e.preventDefault();});
+document.addEventListener('mousemove',e=>{if(svDrag)dragSV(e);});
+document.addEventListener('mouseup',()=>svDrag=false);
+function dragSV(e){const r=svEl.getBoundingClientRect();cpS=Math.round(Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*100);cpV=Math.round((1-Math.max(0,Math.min(1,(e.clientY-r.top)/r.height)))*100);updateCP();}
+// Hue drag
+const hueEl=document.getElementById('cp-hue');
+let hueDrag=false;
+hueEl.addEventListener('mousedown',e=>{hueDrag=true;dragHue(e);e.preventDefault();});
+document.addEventListener('mousemove',e=>{if(hueDrag)dragHue(e);});
+document.addEventListener('mouseup',()=>hueDrag=false);
+function dragHue(e){const r=hueEl.getBoundingClientRect();cpH=Math.round(Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*360);updateCP();}
+// Presets
+const presetsEl=document.getElementById('cp-presets');
+PRESETS.forEach(c=>{
+  const d=document.createElement('div');
+  d.className='cp-preset';d.dataset.color=c;d.style.background=c;
+  d.onclick=()=>{const[h,s,v]=hexToHsv(c);cpH=h;cpS=s;cpV=v;updateCP();};
+  presetsEl.appendChild(d);
+});
+updateCP();
+
+// HITBOX COMBO
+const HITBOXES=['Head','Neck','Chest','Stomach','Pelvis','Arms','Left leg','Right leg'];
+let selectedHb=new Set(['Head','Chest']);
+let comboOpen=false;
+
+function buildDropdown(){
+  const dd=document.getElementById('combo-dropdown');
+  dd.innerHTML='';
+  HITBOXES.forEach(h=>{
+    const item=document.createElement('div');
+    item.className='combo-item'+(selectedHb.has(h)?' sel':'');
+    item.innerHTML=`<div class="combo-cb"><span class="combo-check">✓</span></div><span class="combo-item-name">${h}</span>`;
+    item.onclick=()=>{selectedHb.has(h)?selectedHb.delete(h):selectedHb.add(h);buildDropdown();updateComboTrigger();};
+    dd.appendChild(item);
+  });
+}
+function updateComboTrigger(){
+  const lbl=document.getElementById('combo-label');
+  const cnt=document.getElementById('combo-count');
+  if(selectedHb.size){
+    lbl.textContent=[...selectedHb].join(', ');
+    lbl.className='combo-label has-sel';
+    cnt.style.display='';cnt.textContent=selectedHb.size;
+  } else {
+    lbl.textContent='Select hitboxes...';
+    lbl.className='combo-label';
+    cnt.style.display='none';
+  }
+}
+function toggleCombo(){
+  comboOpen=!comboOpen;
+  document.getElementById('combo-trigger').classList.toggle('open',comboOpen);
+  document.getElementById('combo-dropdown').classList.toggle('open',comboOpen);
+  document.getElementById('combo-arrow').classList.toggle('open',comboOpen);
+  if(comboOpen) buildDropdown();
+}
+document.addEventListener('mousedown',e=>{
+  if(comboOpen&&!document.getElementById('combo-wrap').contains(e.target)){
+    comboOpen=false;
+    document.getElementById('combo-trigger').classList.remove('open');
+    document.getElementById('combo-dropdown').classList.remove('open');
+    document.getElementById('combo-arrow').classList.remove('open');
+  }
+});
+buildDropdown();updateComboTrigger();
+
+// CONFIG
+let cfgs=[
+  {name:'default',date:'today',active:true},
+  {name:'competitive',date:'Apr 19',active:false},
+  {name:'hvh',date:'Apr 17',active:false},
+];
+function renderCfgs(){
+  const list=document.getElementById('cfg-list');
+  list.innerHTML='';
+  cfgs.forEach((c,i)=>{
+    const item=document.createElement('div');
+    item.className='cfg-item'+(c.active?' active':'');
+    item.onclick=()=>loadCfg(i);
+    item.innerHTML=`
+      <div class="cfg-dot"></div>
+      <div class="cfg-name">${c.name}.cfg</div>
+      <div class="cfg-date">${c.date}</div>
+      <div class="cfg-btns">
+        <div class="cfg-btn load" title="Load">▶</div>
+        <div class="cfg-btn del" title="Delete">✕</div>
+      </div>`;
+    item.querySelector('.cfg-btn.load').onclick=e=>{e.stopPropagation();loadCfg(i);};
+    item.querySelector('.cfg-btn.del').onclick=e=>{e.stopPropagation();delCfg(i);};
+    list.appendChild(item);
+  });
+}
+function loadCfg(i){cfgs.forEach((c,j)=>c.active=j===i);renderCfgs();}
+function delCfg(i){
+  if(cfgs.length<=1)return;
+  cfgs.splice(i,1);
+  if(!cfgs.some(c=>c.active))cfgs[0].active=true;
+  renderCfgs();
+}
+let showingInput=false;
+function showNewInput(){
+  showingInput=!showingInput;
+  const row=document.getElementById('cfg-input-row');
+  row.classList.toggle('show',showingInput);
+  if(showingInput)document.getElementById('cfg-input').focus();
+}
+function addCfg(){
+  const inp=document.getElementById('cfg-input');
+  const name=inp.value.trim()||'config'+cfgs.length;
+  cfgs.push({name,date:'now',active:false});
+  inp.value='';showingInput=false;
+  document.getElementById('cfg-input-row').classList.remove('show');
+  renderCfgs();
+}
+function saveCurrent(){
+  cfgs.forEach(c=>{if(c.active)c.date='just now';});
+  renderCfgs();
+}
+renderCfgs();
+</script>
+</body>
+</html>
